@@ -12,7 +12,7 @@ import (
 var ErrCancelled = errors.New("cancelled")
 
 func TestNurseryCtx(t *testing.T) {
-	err := nursery.Supervise(context.Background(), func(n nursery.N) {
+	err := nursery.Supervise(context.Background(), func(n *nursery.N) {
 		n.Go(func() error {
 			return ErrCancelled
 		})
@@ -27,7 +27,7 @@ func TestNurseryCtx(t *testing.T) {
 
 func TestNurserySendSuccess(t *testing.T) {
 	var received int
-	err := nursery.Supervise(context.Background(), func(n nursery.N) {
+	err := nursery.Supervise(context.Background(), func(n *nursery.N) {
 		ch := make(chan int)
 		n.Go(func() error {
 			n.Send(ch, 5)
@@ -45,7 +45,7 @@ func TestNurserySendSuccess(t *testing.T) {
 
 func TestNurserySendCancelled(t *testing.T) {
 	var received int
-	err := nursery.Supervise(context.Background(), func(n nursery.N) {
+	err := nursery.Supervise(context.Background(), func(n *nursery.N) {
 		ch := make(chan int)
 		n.Go(func() error {
 			n.Send(ch, 5)
@@ -62,7 +62,7 @@ func TestNurserySendCancelled(t *testing.T) {
 
 func TestNurseryRecvSuccess(t *testing.T) {
 	var received int
-	err := nursery.Supervise(context.Background(), func(n nursery.N) {
+	err := nursery.Supervise(context.Background(), func(n *nursery.N) {
 		ch := make(chan int)
 		n.Go(func() error {
 			ch <- 5
@@ -80,7 +80,7 @@ func TestNurseryRecvSuccess(t *testing.T) {
 
 func TestNurseryRecvCancelled(t *testing.T) {
 	var received int
-	err := nursery.Supervise(context.Background(), func(n nursery.N) {
+	err := nursery.Supervise(context.Background(), func(n *nursery.N) {
 		ch := make(chan int)
 		n.Go(func() error {
 			return ErrCancelled
@@ -96,7 +96,7 @@ func TestNurseryRecvCancelled(t *testing.T) {
 }
 
 func BenchmarkNurseryManualSendAndRecv(b *testing.B) {
-	err := nursery.Supervise(context.Background(), func(n nursery.N) {
+	err := nursery.Supervise(context.Background(), func(n *nursery.N) {
 		ch := make(chan int)
 
 		n.Go(func() error {
@@ -122,7 +122,7 @@ func BenchmarkNurseryManualSendAndRecv(b *testing.B) {
 }
 
 func BenchmarkNurserySend(b *testing.B) {
-	err := nursery.Supervise(context.Background(), func(n nursery.N) {
+	err := nursery.Supervise(context.Background(), func(n *nursery.N) {
 		ch := make(chan int)
 
 		n.Go(func() error {
@@ -144,7 +144,7 @@ func BenchmarkNurserySend(b *testing.B) {
 }
 
 func BenchmarkNurseryRecv(b *testing.B) {
-	err := nursery.Supervise(context.Background(), func(n nursery.N) {
+	err := nursery.Supervise(context.Background(), func(n *nursery.N) {
 		ch := make(chan int)
 
 		n.Go(func() error {
@@ -174,7 +174,7 @@ func BenchmarkNurseryRecv(b *testing.B) {
 
 func ExampleSupervise() {
 	ctx := context.Background()
-	err := nursery.Supervise(ctx, func(n nursery.N) {
+	err := nursery.Supervise(ctx, func(n *nursery.N) {
 		for i := 0; i < 5; i++ {
 			i := i
 			n.Go(func() error {
@@ -192,7 +192,7 @@ var urls = []string{}
 
 func ExampleSupervise_fanOut() {
 	ctx := context.Background()
-	err := nursery.Supervise(ctx, func(n nursery.N) {
+	err := nursery.Supervise(ctx, func(n *nursery.N) {
 		ch := make(chan string)
 
 		// One goroutine to send work down the channel.

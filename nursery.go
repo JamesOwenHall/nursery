@@ -12,32 +12,14 @@ import (
 	"sync"
 )
 
-// N provides common functions for spawning, communicating with, and waiting
-// for goroutines.
-type N interface {
-	// Go spawns a new goroutine. If the error returned by fn is not nil, then
-	// the nursery's context will be cancelled, along with all pending Send and
-	// Recv calls.
-	Go(fn func() error)
-	// Ctx returns the context associated with the nursery.
-	Ctx() context.Context
-	// Send sends the value v down the channel c. If the nursery's context is
-	// cancelled, the goroutine will call all deferred functions and exit.
-	Send(c interface{}, v interface{})
-	// Recv receives a value from the channel c and stores it in v. If the
-	// nursery's context is cancelled, the goroutine will call all deferred
-	// functions and exit.
-	Recv(c interface{}, v interface{})
-}
-
 // Supervise provides a nursery to spawn goroutines and wait for them all to
 // exit. It will return the first non-nil error returned from any goroutine
 // started with the nursery n.
-func Supervise(ctx context.Context, fn func(n N)) error {
+func Supervise(ctx context.Context, fn func(n *N)) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	n := &nursery{
+	n := &N{
 		ctx:    ctx,
 		cancel: cancel,
 	}
@@ -47,7 +29,7 @@ func Supervise(ctx context.Context, fn func(n N)) error {
 	return n.err
 }
 
-type nursery struct {
+type N struct {
 	ctx    context.Context
 	cancel func()
 	once   sync.Once
@@ -55,7 +37,10 @@ type nursery struct {
 	wg     sync.WaitGroup
 }
 
-func (n *nursery) Go(fn func() error) {
+// Go spawns a new goroutine. If the error returned by fn is not nil, then
+// the nursery's context will be cancelled, along with all pending Send and
+// Recv calls.
+func (n *N) Go(fn func() error) {
 	n.wg.Add(1)
 	go func() {
 		defer n.wg.Done()
@@ -68,11 +53,14 @@ func (n *nursery) Go(fn func() error) {
 	}()
 }
 
-func (n *nursery) Ctx() context.Context {
+// Ctx returns the context associated with the nursery.
+func (n *N) Ctx() context.Context {
 	return n.ctx
 }
 
-func (n *nursery) Send(c interface{}, v interface{}) {
+// Send sends the value v down the channel c. If the nursery's context is
+// cancelled, the goroutine will call all deferred functions and exit.
+func (n *N) Send(c interface{}, v interface{}) {
 	cases := []reflect.SelectCase{
 		{
 			Dir:  reflect.SelectRecv,
@@ -91,7 +79,10 @@ func (n *nursery) Send(c interface{}, v interface{}) {
 	}
 }
 
-func (n *nursery) Recv(c interface{}, v interface{}) {
+// Recv receives a value from the channel c and stores it in v. If the
+// nursery's context is cancelled, the goroutine will call all deferred
+// functions and exit.
+func (n *N) Recv(c interface{}, v interface{}) {
 	cases := []reflect.SelectCase{
 		{
 			Dir:  reflect.SelectRecv,
