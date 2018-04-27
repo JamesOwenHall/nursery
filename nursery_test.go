@@ -95,6 +95,83 @@ func TestNurseryRecvCancelled(t *testing.T) {
 	require.Zero(t, received)
 }
 
+func BenchmarkNurseryManualSendAndRecv(b *testing.B) {
+	err := nursery.Supervise(context.Background(), func(n nursery.N) {
+		ch := make(chan int)
+
+		n.Go(func() error {
+			defer close(ch)
+			for i := 0; i < b.N; i++ {
+				select {
+				case ch <- i + 1:
+				case <-n.Ctx().Done():
+					return n.Ctx().Err()
+				}
+			}
+			return nil
+		})
+
+		n.Go(func() error {
+			for range ch {
+
+			}
+			return nil
+		})
+	})
+	require.NoError(b, err)
+}
+
+func BenchmarkNurserySend(b *testing.B) {
+	err := nursery.Supervise(context.Background(), func(n nursery.N) {
+		ch := make(chan int)
+
+		n.Go(func() error {
+			defer close(ch)
+			for i := 0; i < b.N; i++ {
+				n.Send(ch, i+1)
+			}
+			return nil
+		})
+
+		n.Go(func() error {
+			for range ch {
+
+			}
+			return nil
+		})
+	})
+	require.NoError(b, err)
+}
+
+func BenchmarkNurseryRecv(b *testing.B) {
+	err := nursery.Supervise(context.Background(), func(n nursery.N) {
+		ch := make(chan int)
+
+		n.Go(func() error {
+			defer close(ch)
+			for i := 0; i < b.N; i++ {
+				select {
+				case ch <- i + 1:
+				case <-n.Ctx().Done():
+					return n.Ctx().Err()
+				}
+			}
+			return nil
+		})
+
+		n.Go(func() error {
+			for {
+				var received int
+				n.Recv(ch, &received)
+				if received == 0 {
+					return nil
+				}
+			}
+		})
+	})
+	require.NoError(b, err)
+}
+
 func ExampleSupervise() {
 	ctx := context.Background()
 	err := nursery.Supervise(ctx, func(n nursery.N) {
