@@ -1,6 +1,7 @@
 # Nursery
 
 [![Build Status](https://travis-ci.org/JamesOwenHall/nursery.svg?branch=master)](https://travis-ci.org/JamesOwenHall/nursery)
+[![codecov](https://codecov.io/gh/JamesOwenHall/nursery/branch/master/graph/badge.svg)](https://codecov.io/gh/JamesOwenHall/nursery)
 
 Nursery provides a control flow mechanism for guaranteeing that multiple goroutines will exit before continuing execution. This library was inspired by the concept of nurseries discussed here:
 
